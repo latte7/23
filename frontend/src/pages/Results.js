@@ -38,7 +38,7 @@ const Results = () => {
       const cleanLine = line.replace(/^-\s*/, '');
       
       // Check for day headers
-      const dayMatch = cleanLine.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday):/i);
+      const dayMatch = cleanLine.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)(?:\s*\([^)]+\))?:/i);
       
       if (dayMatch) {
         // Convert full day names to three-letter codes
@@ -47,7 +47,7 @@ const Results = () => {
       } else if (currentDay) {
         if (line.startsWith('-')) {
           // New exercise entry
-          const exerciseMatch = cleanLine.match(/(.*?):\s*(\d+)\s*x\s*(\d+)(?:\s*\(Rest\s*(\d+)\s*seconds\))?/);
+          const exerciseMatch = cleanLine.match(/(.*?):\s*(\d+)\s*x\s*(\d+(?:\/leg)?)\s*(?:\(Rest\s*(\d+)s?\))?/);
           if (exerciseMatch) {
             const [_, name, sets, reps, rest] = exerciseMatch;
             currentExercise = {
