@@ -9,7 +9,7 @@ const Form = () => {
     fitnessLevel: '',
     goals: '',
     requirements: '',
-    workoutDays: '',
+    workoutDays: [],
     disabilities: ''
   });
 
@@ -30,8 +30,8 @@ const Form = () => {
       alert('Please select your fitness goals');
       return false;
     }
-    if (!formData.workoutDays) {
-      alert('Please select number of workout days');
+    if (formData.workoutDays.length === 0) {
+      alert('Please select your workout days');
       return false;
     }
     return true;
@@ -86,7 +86,7 @@ const Form = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-center" role="heading">
           Create Your Workout Plan
         </h1>
@@ -142,20 +142,25 @@ const Form = () => {
             <label 
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Number of Workout Days per Week
+              Select Your Workout Days
             </label>
-            <div className="flex justify-center gap-4 flex-wrap">
-              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+            <div className="flex justify-center gap-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                 <button
                   key={day}
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, workoutDays: day.toString() }))}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold transition-colors
-                    ${formData.workoutDays === day.toString()
+                  onClick={() => setFormData(prev => ({
+                    ...prev,
+                    workoutDays: prev.workoutDays.includes(day)
+                      ? prev.workoutDays.filter(d => d !== day)
+                      : [...prev.workoutDays, day]
+                  }))}
+                  className={`w-16 h-12 rounded-full flex items-center justify-center text-sm font-semibold transition-colors
+                    ${formData.workoutDays.includes(day)
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                  aria-label={`${day} days per week`}
-                  aria-pressed={formData.workoutDays === day.toString()}
+                  aria-label={`Select ${day}`}
+                  aria-pressed={formData.workoutDays.includes(day)}
                 >
                   {day}
                 </button>

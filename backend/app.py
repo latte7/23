@@ -56,41 +56,124 @@ def generate_plan():
                 return jsonify({'error': f'Missing required field: {field}'}), 400
 
         # Create prompt for Cohere
-        prompt = f"""Create a personalized workout plan based on the following information:
-        Fitness Level: {data['fitnessLevel']}
-        Fitness Goals: {data['goals']}
-        Workout Days Per Week: {data['workoutDays']}
-        Physical Limitations: {data['disabilities'] if data.get('disabilities') else 'None'}
-        Additional Requirements: {data['requirements'] if data.get('requirements') else 'None'}
+        selected_days = ', '.join(data['workoutDays'])
+        prompt = f"""As a certified personal trainer and rehabilitation specialist, create a workout plan that prioritizes safety and effectiveness based on the following client profile:
 
-        Please provide a detailed workout plan that:
-        1. Respects any physical limitations
-        2. Matches the specified number of workout days ({data['workoutDays']})
-        3. Focuses on the stated fitness goals ({data['goals']})
-        4. Is appropriate for the given fitness level ({data['fitnessLevel']})
-        5. Includes specific exercises, sets, and reps
-        6. Provides rest day recommendations
-        """
+USER PROFILE:
+- Fitness Level: {data['fitnessLevel']}
+- Primary Goal: {data['goals']}
+- Workout Days: {selected_days}
+- Physical Limitations or Disabilities: {data['disabilities'] if data.get('disabilities') else 'None'}
+- Additional Requirements: {data['requirements'] if data.get('requirements') else 'None'}
+
+EXERCISE SELECTION CRITERIA:
+1. SAFETY FIRST: Begin by analyzing the client's disabilities and injuries to:
+   - Identify movements that must be avoided
+   - List safe movement patterns that won't aggravate existing conditions
+   - Determine appropriate exercise modifications needed
+
+2. EXERCISE ADAPTATION:
+   - Choose exercises that can be safely performed with their specific limitations
+   - Include alternative versions of exercises when needed
+   - Specify any equipment modifications required
+   - Adjust ranges of motion based on physical limitations
+
+3. PROGRESSION PLANNING:
+   - Start with the most conservative version of each exercise
+   - Include specific form cues that address their limitations
+   - Plan gradual progression that respects their conditions
+
+First, provide a detailed program focus explanation:
+[FOCUS]
+Explain how this program specifically addresses the client's limitations and goals:
+1. How exercises were selected to work around their specific disabilities/injuries
+2. Why these exercises are safe and effective for their condition
+3. How the program allows for progress while maintaining safety
+[/FOCUS]
+
+Then list the daily exercises with explanations for each:
+
+[Day]:
+- [Exercise Name]: [Sets] x [Reps] (Optional: Rest [Time])
+  [EXPLANATION]: Explain why this exercise is safe for their condition and how it's been modified for their specific needs
+
+Example Format:
+Mon:
+- Modified Push-ups: 3 x 8 (Rest 90 seconds)
+  [EXPLANATION]: Wall push-ups chosen to accommodate shoulder limitation, reducing stress on joints while building strength safely.
+- Seated Rows: 3 x 12 (Rest 60 seconds)
+  [EXPLANATION]: Seated position provides stability for lower back condition, focusing on proper scapular retraction.
+
+Note: Each exercise must include:
+1. Specific modifications for their disabilities/injuries
+2. Why it's safe for their condition
+3. How it helps achieve their goals while respecting limitations"""
 
         print("Sending prompt to Cohere:", prompt)
 
         try:
-            # Generate response using Cohere
+            # Generate response using Cohere with optimized parameters
             response = co.generate(
                 model='command',
                 prompt=prompt,
-                max_tokens=1000,
-                temperature=0.7,
+                max_tokens=2000,  # Increased for more detailed responses
+                temperature=0.4,  # Reduced for more consistent outputs
                 k=0,
-                stop_sequences=[],
+                stop_sequences=["\n\n\n"],  # Stop at triple newline to maintain formatting
                 return_likelihoods='NONE'
             )
             
             plan = response.generations[0].text.strip()
             print("Received response from Cohere:", plan[:100] + "...")  # Print first 100 chars
             
+            # Process the response to ensure consistent formatting
+            lines = plan.split('\n')
+            formatted_lines = []
+            current_day = None
+            
+            # First, find and extract the [FOCUS] section
+            focus_section = ""
+            in_focus = False
+            remaining_lines = []
+            
+            for line in lines:
+                if "[FOCUS]" in line:
+                    in_focus = True
+                    continue
+                elif "[/FOCUS]" in line:
+                    in_focus = False
+                    continue
+                elif in_focus:
+                    focus_section += line + "\n"
+                else:
+                    remaining_lines.append(line)
+            
+            # Then process the exercise days
+            for line in remaining_lines:
+                line = line.strip()
+                if not line:
+                    continue
+                    
+                # Check if line starts with a day
+                if any(line.lower().startswith(day.lower() + ':') for day in data['workoutDays']):
+                    if current_day:  # Add spacing between days
+                        formatted_lines.append('')
+                    current_day = line
+                    formatted_lines.append(line)
+                elif line.startswith('-'):
+                    formatted_lines.append(line)
+                elif line.startswith('[EXPLANATION]'):
+                    # Ensure explanation is properly indented
+                    formatted_lines.append('  ' + line)
+                else:
+                    # If it's an exercise without a dash, add one
+                    formatted_lines.append(f"- {line}")
+            
+            formatted_plan = '\n'.join(formatted_lines)
+            
             return jsonify({
-                'plan': plan
+                'plan': formatted_plan,
+                'focus': focus_section.strip()
             })
 
         except Exception as cohere_error:

@@ -3,10 +3,10 @@ const Home = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto text-center">
         <h1 className="text-4xl font-bold mb-6" role="heading">
-          Welcome to Fitness Planner
+          Welcome to OptiHeal
         </h1>
         <p className="text-lg text-gray-600 mb-8">
-          Create your personalized workout plan based on your fitness level and goals.
+          A portmanteau of "Optimal" and "Health", OptiHeal is a workout planner that caters specifically towards your body.
         </p>
         <div className="bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl font-semibold mb-4">Get Started</h2>
