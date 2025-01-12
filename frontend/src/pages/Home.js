@@ -3,10 +3,10 @@ const Home = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto text-center">
         <h1 className="text-4xl font-bold mb-6" role="heading">
-          Welcome to OptiHeal
+          Welcome to OptiHealth
         </h1>
         <p className="text-lg text-gray-600 mb-8">
-          A portmanteau of "Optimal" and "Health", OptiHeal is a workout planner that caters specifically towards your body.
+          A portmanteau of "Optimal" and "Health", OptiHealth is a workout planner that caters specifically towards your own body.
         </p>
         <div className="bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl font-semibold mb-4">Get Started</h2>

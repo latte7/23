@@ -70,7 +70,7 @@ const Form = () => {
       
       console.log('Sending data to backend:', formData);
       const response = await axios.post('http://localhost:5000/generate-plan', formData, {
-        timeout: 30000 // 30 second timeout
+        timeout: 120000 // 120 second timeout
       });
       console.log('Received response:', response.data);
       
@@ -78,7 +78,11 @@ const Form = () => {
       navigate('/results');
     } catch (error) {
       console.error('Detailed error:', error.response?.data || error.message);
-      alert(`Error: ${error.response?.data?.error || error.message}`);
+      if (error.code === 'ECONNABORTED') {
+        alert('The request took too long to complete. Please try again with fewer workout days or refresh the page.');
+      } else {
+        alert(`Error: ${error.response?.data?.error || error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }

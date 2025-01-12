@@ -3,6 +3,7 @@ from flask_cors import CORS
 import cohere
 import os
 from dotenv import load_dotenv
+import time
 
 # Load environment variables
 load_dotenv()
@@ -41,6 +42,8 @@ def test():
 @app.route('/generate-plan', methods=['POST'])
 def generate_plan():
     try:
+        start_time = time.time()
+        
         # Check if API key is available
         if not os.getenv('COHERE_API_KEY'):
             return jsonify({'error': 'Cohere API key not found'}), 500
@@ -55,59 +58,29 @@ def generate_plan():
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
 
-        # Create prompt for Cohere
+        # Create prompt for Cohere - optimized for faster response
         selected_days = ', '.join(data['workoutDays'])
-        prompt = f"""As a certified personal trainer and rehabilitation specialist, create a workout plan that prioritizes safety and effectiveness based on the following client profile:
+        prompt = f"""Create a concise workout plan for a {data['fitnessLevel']} level person focusing on {data['goals']}, training on these days: {selected_days}.
+{f'Accommodate for: {data["disabilities"]}.' if data.get('disabilities') else ''}
+{f'Additional requirements: {data["requirements"]}.' if data.get('requirements') else ''}
 
-USER PROFILE:
-- Fitness Level: {data['fitnessLevel']}
-- Primary Goal: {data['goals']}
-- Workout Days: {selected_days}
-- Physical Limitations or Disabilities: {data['disabilities'] if data.get('disabilities') else 'None'}
-- Additional Requirements: {data['requirements'] if data.get('requirements') else 'None'}
-
-EXERCISE SELECTION CRITERIA:
-1. SAFETY FIRST: Begin by analyzing the client's disabilities and injuries to:
-   - Identify movements that must be avoided
-   - List safe movement patterns that won't aggravate existing conditions
-   - Determine appropriate exercise modifications needed
-
-2. EXERCISE ADAPTATION:
-   - Choose exercises that can be safely performed with their specific limitations
-   - Include alternative versions of exercises when needed
-   - Specify any equipment modifications required
-   - Adjust ranges of motion based on physical limitations
-
-3. PROGRESSION PLANNING:
-   - Start with the most conservative version of each exercise
-   - Include specific form cues that address their limitations
-   - Plan gradual progression that respects their conditions
-
-First, provide a detailed program focus explanation:
 [FOCUS]
-Explain how this program specifically addresses the client's limitations and goals:
-1. How exercises were selected to work around their specific disabilities/injuries
-2. Why these exercises are safe and effective for their condition
-3. How the program allows for progress while maintaining safety
+Brief program focus explaining safety and effectiveness for the user's level and goals.
 [/FOCUS]
 
-Then list the daily exercises with explanations for each:
-
+For each day, provide 2-3 exercises in this format:
 [Day]:
-- [Exercise Name]: [Sets] x [Reps] (Optional: Rest [Time])
-  [EXPLANATION]: Explain why this exercise is safe for their condition and how it's been modified for their specific needs
+- [Exercise]: [Sets] x [Reps] (Rest [Time])
+  [EXPLANATION]: Brief explanation of form and safety
 
-Example Format:
+Example:
 Mon:
-- Modified Push-ups: 3 x 8 (Rest 90 seconds)
-  [EXPLANATION]: Wall push-ups chosen to accommodate shoulder limitation, reducing stress on joints while building strength safely.
-- Seated Rows: 3 x 12 (Rest 60 seconds)
-  [EXPLANATION]: Seated position provides stability for lower back condition, focusing on proper scapular retraction.
+- Push-ups: 3 x 8 (Rest 60s)
+  [EXPLANATION]: Keep core tight, modify on knees if needed
+- Squats: 3 x 10 (Rest 60s)
+  [EXPLANATION]: Focus on form, go only as deep as comfortable
 
-Note: Each exercise must include:
-1. Specific modifications for their disabilities/injuries
-2. Why it's safe for their condition
-3. How it helps achieve their goals while respecting limitations"""
+IMPORTANT: Provide exercises for ALL of these days: {selected_days}"""
 
         print("Sending prompt to Cohere:", prompt)
 
@@ -116,15 +89,15 @@ Note: Each exercise must include:
             response = co.generate(
                 model='command',
                 prompt=prompt,
-                max_tokens=2000,  # Increased for more detailed responses
+                max_tokens=1500,  # Reduced for faster response
                 temperature=0.4,  # Reduced for more consistent outputs
                 k=0,
-                stop_sequences=["\n\n\n"],  # Stop at triple newline to maintain formatting
+                stop_sequences=["\n\n\n"],
                 return_likelihoods='NONE'
             )
             
             plan = response.generations[0].text.strip()
-            print("Received response from Cohere:", plan[:100] + "...")  # Print first 100 chars
+            print("Received response from Cohere:", plan[:100] + "...")
             
             # Process the response to ensure consistent formatting
             lines = plan.split('\n')
@@ -153,23 +126,53 @@ Note: Each exercise must include:
                 line = line.strip()
                 if not line:
                     continue
-                    
+                
                 # Check if line starts with a day
-                if any(line.lower().startswith(day.lower() + ':') for day in data['workoutDays']):
+                day_prefixes = data['workoutDays'] + [d + ':' for d in data['workoutDays']]
+                is_day_header = any(line.lower().startswith(day.lower()) for day in day_prefixes)
+                
+                if is_day_header:
                     if current_day:  # Add spacing between days
                         formatted_lines.append('')
+                    # Ensure consistent day format (add colon if missing)
+                    if not line.endswith(':'):
+                        line = line + ':'
                     current_day = line
                     formatted_lines.append(line)
                 elif line.startswith('-'):
-                    formatted_lines.append(line)
+                    # Ensure exercise format is correct
+                    if ':' in line and 'x' in line.lower():
+                        formatted_lines.append(line)
+                    else:
+                        # Try to fix common formatting issues
+                        parts = line.split('-', 1)[1].strip().split(':', 1)
+                        if len(parts) == 2:
+                            exercise_name = parts[0].strip()
+                            details = parts[1].strip()
+                            formatted_lines.append(f"- {exercise_name}: {details}")
+                        else:
+                            formatted_lines.append(line)
                 elif line.startswith('[EXPLANATION]'):
-                    # Ensure explanation is properly indented
+                    # Ensure explanation is properly indented and formatted
                     formatted_lines.append('  ' + line)
                 else:
                     # If it's an exercise without a dash, add one
                     formatted_lines.append(f"- {line}")
             
             formatted_plan = '\n'.join(formatted_lines)
+            
+            # Ensure each selected day has at least one exercise
+            for day in data['workoutDays']:
+                day_found = False
+                for line in formatted_lines:
+                    if line.lower().startswith(day.lower() + ':'):
+                        day_found = True
+                        break
+                if not day_found:
+                    formatted_plan += f"\n\n{day}:\n- Basic Exercise: 3 x 10 (Rest 60s)\n  [EXPLANATION]: Starting with a basic exercise suitable for your level."
+            
+            end_time = time.time()
+            print(f"Total processing time: {end_time - start_time:.2f} seconds")
             
             return jsonify({
                 'plan': formatted_plan,

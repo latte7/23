@@ -165,7 +165,7 @@ const Results = () => {
               </div>
             </div>
           </div>
-
+                  
           {/* Right section - Workout Schedule */}
           <div className="lg:w-3/4 flex flex-wrap lg:flex-nowrap gap-1">
             {days.map((day) => (
@@ -196,7 +196,7 @@ const Results = () => {
                   {(hoveredDay === day || (!hoveredDay && lastHoveredDay === day)) && (
                     <div className="space-y-3">
                       {formData.workoutDays.includes(day) ? (
-                        parsedWorkoutPlan && parsedWorkoutPlan[day].length > 0 ? (
+                        parsedWorkoutPlan && Array.isArray(parsedWorkoutPlan[day]) && parsedWorkoutPlan[day].length > 0 ? (
                           parsedWorkoutPlan[day].map((exercise, index) => (
                             <div key={index} className="bg-gray-50 p-3 rounded">
                               <div>
@@ -218,7 +218,7 @@ const Results = () => {
                             </div>
                           ))
                         ) : (
-                          <p className="text-sm text-gray-500">No exercises specified for this day</p>
+                          <p className="text-sm text-gray-500">Generating exercises for this day...</p>
                         )
                       ) : (
                         <p className="text-sm text-gray-500 italic">Rest Day</p>
