@@ -39,6 +39,16 @@ const Results = () => {
     );
   }
 
+  const styledPlan = `
+  <h2 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem; color: #1f2937;">
+    Personalized Workout Plan
+  </h2>
+  <div style="white-space: pre-wrap; font-size: 1rem; line-height: 1.6; color: #374151;">
+    ${workoutPlan.plan}
+  </div>
+`;
+
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
@@ -62,9 +72,10 @@ const Results = () => {
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h3 className="text-xl font-semibold mb-4">Your Personalized Workout Plan</h3>
-            <div className="whitespace-pre-wrap font-mono text-sm">
-              {workoutPlan.plan}
-            </div>
+            <div
+              className="bg-white p-6 rounded-lg shadow-lg"
+              dangerouslySetInnerHTML={{ __html: styledPlan }}
+        ></div>
           </div>
         </div>
 
