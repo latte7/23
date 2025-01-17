@@ -1,10 +1,6 @@
 # OptiHealth
 
-Project for Deltahacks-xi
-
-# OptiHealth
-
-OptiHealth is an AI-powered workout split generator that personalizes fitness routines for individuals. It utilizes React.js with Tailwind CSS for the frontend and Flask for the backend, integrating the Cohere API as the AI-powered workout planner.
+OptiHealth is an AI-powered workout split generator that personalizes fitness routines for individuals. It utilizes React.js with Tailwind CSS for the frontend and Flask for the backend, integrating the Cohere API as the AI-powered workout planner. Project for Deltahacks-xi, 2025.
 
 ## Features
 - AI-generated workout plans tailored to user goals
