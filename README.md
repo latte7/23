@@ -12,7 +12,6 @@ OptiHealth is an AI-powered workout split generator that personalizes fitness ro
 - **Frontend**: React.js, Tailwind CSS
 - **Backend**: Flask (Python)
 - **AI Integration**: Cohere API
-- **Database**: SQLite/PostgreSQL (if applicable)
 
 ## Installation
 
